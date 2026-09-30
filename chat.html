@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}AI Chat{% endblock %}
+{% block content %}
+<h2>🤖 Multi-AI Weather Chat</h2>
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="card-ag p-3">
+      <label class="form-label">Model</label>
+      <select id="model" class="form-select mb-3">
+        {% for name, meta in models.items() %}
+        <option value="{{ name }}">{{ meta.icon }} {{ name }} ({{ meta.provider }})</option>
+        {% endfor %}
+      </select>
+      <p class="small text-muted">Without API keys, answers use the built-in space-weather knowledge base.</p>
+      <a href="{{ url_for('main.settings') }}" class="btn btn-outline-ag btn-sm">Configure keys</a>
+    </div>
+  </div>
+  <div class="col-md-9">
+    <div id="chatBox" class="chat-box mb-2"></div>
+    <div class="input-group">
+      <input id="q" class="form-control" placeholder="Ask about Kp, CMEs, auroras, GPS impacts…">
+      <button class="btn btn-ag" id="btnSend">Send</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const box = document.getElementById('chatBox');
+function add(text) {
+  box.textContent += text + '\n\n';
+  box.scrollTop = box.scrollHeight;
+}
+document.getElementById('btnSend').onclick = async () => {
+  const q = document.getElementById('q').value.trim();
+  if (!q) return;
+  const model = document.getElementById('model').value;
+  add('You: ' + q);
+  document.getElementById('q').value = '';
+  const r = await postJSON('/api/chat', { question: q, model });
+  add((r.meta?.icon||'🤖') + ' ' + r.model + ':\n' + (r.answer || r.message || 'No reply'));
+};
+document.getElementById('q').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btnSend').click();
+});
+</script>
+{% endblock %}

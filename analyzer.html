@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Analyzer{% endblock %}
+{% block content %}
+<h2>📊 Graphical Analyzer</h2>
+<div class="row g-3">
+  <div class="col-md-3">
+    <div class="card-ag p-3">
+      <label class="form-label">Parameter</label>
+      <select id="param" class="form-select mb-2">
+        {% for k, v in glossary.items() %}
+        <option value="{{ k }}">{{ v[0] }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-ag btn-sm w-100" id="btnPlot">Plot series</button>
+      <hr class="border-secondary">
+      <pre id="stats" class="small mb-0" style="white-space:pre-wrap"></pre>
+    </div>
+  </div>
+  <div class="col-md-9">
+    <div class="card-ag p-3">
+      <canvas id="chart" height="120"></canvas>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+let chart;
+async function plot() {
+  const key = document.getElementById('param').value;
+  const series = await getJSON('/api/series/' + key);
+  const sum = await getJSON('/api/summary/' + key + '?period=all');
+  document.getElementById('stats').textContent =
+    `count=${sum.count}  mean=${(sum.mean||0).toFixed?.(2) ?? sum.mean}  min=${sum.min}  max=${sum.max}  stdev=${(sum.stdev||0).toFixed?.(2) ?? sum.stdev}`;
+  const ctx = document.getElementById('chart').getContext('2d');
+  if (chart) chart.destroy();
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: series.timestamps || [],
+      datasets: [{
+        label: key,
+        data: series.values || [],
+        borderColor: '#e67e22',
+        backgroundColor: 'rgba(230,126,34,0.15)',
+        fill: true,
+        tension: 0.25,
+        pointRadius: 2
+      }]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { ticks: { color: '#94a3b8', maxRotation: 45 }, grid: { color: '#1e293b' } },
+        y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } }
+      }
+    }
+  });
+}
+document.getElementById('btnPlot').onclick = plot;
+plot();
+</script>
+{% endblock %}

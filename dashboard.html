@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h2 class="mb-0">Live Station</h2>
+    <small class="text-muted" id="statusLine">Loading…</small>
+  </div>
+  <div>
+    <button class="btn btn-ag btn-sm" id="btnRefresh">🔄 Sample / Refresh</button>
+    <button class="btn btn-outline-ag btn-sm" id="btnExport">💾 Export .AG</button>
+  </div>
+</div>
+<div class="mb-3">
+  <span class="text-muted">Storm risk:</span>
+  <strong id="riskOverall" class="fs-4 risk-LOW">—</strong>
+</div>
+<div class="row g-2" id="paramGrid"></div>
+<div class="row g-3 mt-2">
+  <div class="col-lg-7">
+    <div class="card-ag p-3">
+      <h5>Sector warnings</h5>
+      <div id="sectors"></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card-ag p-3">
+      <h5>Quick links</h5>
+      <a class="btn btn-outline-ag btn-sm me-1 mb-1" href="{{ url_for('main.analyzer') }}">Analyzer</a>
+      <a class="btn btn-outline-ag btn-sm me-1 mb-1" href="{{ url_for('main.prediction') }}">Prediction Lab</a>
+      <a class="btn btn-outline-ag btn-sm me-1 mb-1" href="{{ url_for('main.chat') }}">AI Chat</a>
+      <a class="btn btn-outline-ag btn-sm me-1 mb-1" href="{{ url_for('main.teach') }}">Teach</a>
+      <hr class="border-secondary">
+      <p class="small text-muted mb-0">Simulation generates realistic educational values. For operations, integrate live NOAA/SWPC feeds.</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const PARAMS = [
+  ["wind_speed","Solar wind","km/s"],["wind_density","Density","/cm³"],["imf_bz","IMF Bz","nT"],
+  ["flare_class","Flare","class"],["cme_prob","CME prob","%"],["e_part","Energetic p","pfu"],
+  ["kp","Kp","0-9"],["dst","Dst","nT"],["radio","F10.7","sfu"],["tec","TEC","TECU"],
+  ["aurora","Aurora","%"],["cosmic","Cosmic","idx"],["temp","Temp","°C"],["pressure","Pressure","hPa"],["humidity","Humidity","%"]
+];
+function renderParams(obs) {
+  const grid = document.getElementById('paramGrid');
+  grid.innerHTML = PARAMS.map(([k,label,unit]) => {
+    let v = obs[k];
+    if (typeof v === 'number' && !Number.isInteger(v)) v = v.toFixed(2);
+    return `<div class="col-6 col-md-4 col-xl-2"><div class="param-card"><div class="label">${label}</div><div class="value">${v ?? '—'}</div><div class="label">${unit}</div></div></div>`;
+  }).join('');
+}
+function renderRisk(risk) {
+  const el = document.getElementById('riskOverall');
+  el.textContent = risk.overall;
+  el.className = 'fs-4 ' + riskClass(risk.overall);
+  document.getElementById('sectors').innerHTML = (risk.sectors || []).map(s =>
+    `<div class="mb-2">${s.icon} <strong>${s.label}</strong> ${sectorBadge(s.level)}<br><span class="small text-muted">${s.message}</span></div>`
+  ).join('');
+}
+async function loadLatest() {
+  const data = await getJSON('/api/latest');
+  renderParams(data.observation);
+  renderRisk(data.risk);
+  document.getElementById('statusLine').textContent = 'Updated ' + (data.observation.timestamp || '') + ' · source ' + (data.observation.source || 'sim');
+}
+document.getElementById('btnRefresh').onclick = async () => {
+  const data = await postJSON('/api/live', {});
+  renderParams(data.observation);
+  renderRisk(data.risk);
+  document.getElementById('statusLine').textContent = 'Live sample ' + data.observation.timestamp;
+};
+document.getElementById('btnExport').onclick = async () => {
+  const r = await fetch('/api/export/ag', { method: 'POST', credentials: 'same-origin' });
+  if (!r.ok) { alert('Export failed — re-login if session expired'); return; }
+  const blob = await r.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'auther_guard_snapshot.AG';
+  a.click();
+};
+loadLatest();
+setInterval(loadLatest, 120000);
+</script>
+{% endblock %}

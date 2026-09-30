@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Teach{% endblock %}
+{% block content %}
+<h2>🌞 Space Weather — Complete Guide</h2>
+<div class="row g-3">
+  <div class="col-lg-7">
+    {% set lessons = [
+      ("🌬️ Solar Wind", "#ff9966", "Continuous stream of charged particles from the Sun (300–800 km/s). Fast streams compress the magnetosphere and can trigger storms."),
+      ("🧲 IMF Bz", "#66ccff", "North–south component of the interplanetary magnetic field. Southward (negative) Bz couples to Earth’s field and drives energy input."),
+      ("🔥 Solar Flares", "#ff6666", "Sudden radiation bursts classified A–X. X-class events can cause HF blackouts and radiation hazards."),
+      ("💥 CMEs", "#ff99cc", "Huge plasma clouds that can reach Earth in 1–4 days and cause major geomagnetic storms and auroras."),
+      ("🌍 Kp Index", "#99ff99", "Global geomagnetic activity 0–9. Kp ≥ 5 means a geomagnetic storm is underway."),
+      ("🌀 Dst Index", "#99ccff", "Ring-current strength. More negative = stronger storm (e.g. Halloween 2003: Dst ≈ −589 nT)."),
+      ("📶 TEC", "#cceeff", "Ionospheric electron content. High TEC bends GPS signals and can cause positioning errors."),
+      ("✨ Aurora", "#ffb3e6", "Particles colliding with upper-atmosphere gases. Best near polar regions when Kp is elevated."),
+    ] %}
+    {% for title, color, body in lessons %}
+    <div class="lesson-card" style="background:{{ color }}">
+      <strong>{{ title }}</strong>
+      <div class="mt-1">{{ body }}</div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="col-lg-5">
+    <div class="card-ag p-3 mb-3">
+      <h5>🚀 Heliosphere model</h5>
+      <canvas id="cmeCanvas" width="480" height="260"></canvas>
+      <div class="mt-2">
+        <button class="btn btn-ag btn-sm" id="btnCme">Launch CME</button>
+        <button class="btn btn-outline-ag btn-sm" id="btnReset">Reset</button>
+      </div>
+    </div>
+    <div class="card-ag p-3">
+      <h5>🤖 Ask about space weather</h5>
+      <select id="teachModel" class="form-select form-select-sm mb-2">
+        {% for name, meta in models.items() %}
+        <option value="{{ name }}">{{ meta.icon }} {{ name }}</option>
+        {% endfor %}
+      </select>
+      <input id="teachQ" class="form-control mb-2" value="What is a geomagnetic storm?">
+      <button class="btn btn-ag btn-sm" id="btnTeachAsk">Ask AI</button>
+      <div id="teachAns" class="chat-box mt-2 small"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const cv = document.getElementById('cmeCanvas');
+const ctx = cv.getContext('2d');
+let anim = null;
+function drawBase() {
+  const w = cv.width, h = cv.height;
+  ctx.fillStyle = '#00121a';
+  ctx.fillRect(0,0,w,h);
+  for (let i=0;i<50;i++) {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(Math.random()*w, Math.random()*h, 1, 1);
+  }
+  // sun
+  ctx.beginPath(); ctx.arc(80, h/2, 36, 0, Math.PI*2); ctx.fillStyle = '#ffaa33'; ctx.fill();
+  ctx.fillStyle = '#ffcc66'; ctx.font = '14px sans-serif'; ctx.fillText('Sun', 65, h/2+55);
+  // earth
+  ctx.beginPath(); ctx.arc(w-90, h/2, 20, 0, Math.PI*2); ctx.fillStyle = '#33ccff'; ctx.fill();
+  ctx.fillStyle = '#ccffff'; ctx.fillText('Earth', w-110, h/2+40);
+}
+drawBase();
+document.getElementById('btnCme').onclick = () => {
+  if (anim) return;
+  let x = 120;
+  function step() {
+    drawBase();
+    ctx.beginPath(); ctx.arc(x, cv.height/2, 18, 0, Math.PI*2); ctx.fillStyle = '#ff6666'; ctx.fill();
+    x += 12;
+    if (x < cv.width - 110) anim = requestAnimationFrame(step);
+    else {
+      anim = null;
+      drawBase();
+      ctx.beginPath(); ctx.arc(cv.width-90, cv.height/2, 20, 0, Math.PI*2); ctx.fillStyle = '#ff9999'; ctx.fill();
+      setTimeout(drawBase, 600);
+    }
+  }
+  step();
+};
+document.getElementById('btnReset').onclick = () => { if (anim) cancelAnimationFrame(anim); anim=null; drawBase(); };
+document.getElementById('btnTeachAsk').onclick = async () => {
+  const q = document.getElementById('teachQ').value;
+  const model = document.getElementById('teachModel').value;
+  document.getElementById('teachAns').textContent = 'Loading…';
+  const r = await postJSON('/api/chat', { question: q, model });
+  document.getElementById('teachAns').textContent = (r.meta?.icon||'') + ' ' + r.model + ':\n\n' + (r.answer||r.message);
+};
+</script>
+{% endblock %}

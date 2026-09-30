@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Deep Learning{% endblock %}
+{% block content %}
+<h2>🧠 Deep Learning Lab</h2>
+<p class="text-muted">Educational Random Forest that predicts “storm” (Kp ≥ 5) from solar-wind and magnetospheric features.</p>
+<button class="btn btn-ag" id="btnTrain">Train / retrain model</button>
+<pre id="mlOut" class="card-ag p-3 mt-3 small" style="white-space:pre-wrap">Click train to fit on stored + simulated samples.</pre>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('btnTrain').onclick = async () => {
+  document.getElementById('mlOut').textContent = 'Training…';
+  const r = await postJSON('/api/ml/train', {});
+  document.getElementById('mlOut').textContent = JSON.stringify(r, null, 2);
+};
+</script>
+{% endblock %}

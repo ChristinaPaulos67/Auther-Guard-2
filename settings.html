@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+<h2>⚙️ Settings</h2>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card-ag p-3">
+      <h5>AI API keys (session)</h5>
+      <p class="small text-muted">Keys stay in your browser session only. Prefer environment variables for production.</p>
+      {% for name, meta in models.items() %}
+      {% if name != 'Local' %}
+      <div class="mb-2">
+        <label class="form-label">{{ meta.icon }} {{ name }}</label>
+        <input type="password" class="form-control form-control-sm key-input" data-model="{{ name }}" placeholder="API key">
+      </div>
+      {% endif %}
+      {% endfor %}
+      <button class="btn btn-ag btn-sm" id="btnSaveKeys">Save keys</button>
+      <div id="keyStatus" class="small mt-2 text-muted"></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card-ag p-3">
+      <h5>Import encrypted .AG</h5>
+      <form id="importForm">
+        <input type="file" name="file" accept=".AG" class="form-control mb-2" required>
+        <input type="password" name="password" class="form-control mb-2" placeholder="Decryption password (or leave blank to use login password)">
+        <button class="btn btn-outline-ag btn-sm">Import</button>
+      </form>
+      <div id="importStatus" class="small mt-2"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('btnSaveKeys').onclick = async () => {
+  const body = {};
+  document.querySelectorAll('.key-input').forEach(inp => { body[inp.dataset.model] = inp.value; });
+  const r = await postJSON('/api/settings/keys', body);
+  document.getElementById('keyStatus').textContent = r.ok ? 'Configured: ' + (r.configured||[]).join(', ') : 'Failed';
+};
+document.getElementById('importForm').onsubmit = async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const r = await fetch('/api/import/ag', { method: 'POST', body: fd, credentials: 'same-origin' });
+  const j = await r.json();
+  document.getElementById('importStatus').textContent = j.ok ? 'Imported ' + j.imported + ' records' : (j.message || 'Error');
+};
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Auther Guard AI{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <h1 class="display-4 fw-bold" style="background:linear-gradient(120deg,#e67e22,#22d3ee);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">
+    🛡️ Auther Guard AI
+  </h1>
+  <p class="lead text-muted">Space &amp; Terrestrial Weather Station — monitoring, prediction, multi-AI analysis</p>
+  <a href="{{ url_for('auth.login') }}" class="btn btn-ag btn-lg mt-3">Enter Station</a>
+</div>
+<div class="row g-3 justify-content-center">
+  <div class="col-md-3"><div class="card-ag p-3 h-100"><h5>🌞 Space weather</h5><p class="small text-muted">Kp, Dst, solar wind, flares, CME risk, aurora chance</p></div></div>
+  <div class="col-md-3"><div class="card-ag p-3 h-100"><h5>🤖 Multi-AI</h5><p class="small text-muted">Claude, Gemini, DeepSeek, GPT, Grok + offline knowledge</p></div></div>
+  <div class="col-md-3"><div class="card-ag p-3 h-100"><h5>🔐 Encrypted .AG</h5><p class="small text-muted">AES-256-CTR archives for secure data export/import</p></div></div>
+  <div class="col-md-3"><div class="card-ag p-3 h-100"><h5>📊 Prediction Lab</h5><p class="small text-muted">Learner &amp; technical modes for students and researchers</p></div></div>
+</div>
+{% endblock %}
